@@ -7,22 +7,28 @@ def show_network_info():
     print("\n=== Network Interfaces ===\n")
     addrs = psutil.net_if_addrs()
 
+    # Different platforms use different constants for MAC addresses.
+    mac_families = set()
+    if hasattr(psutil, "AF_LINK"):
+        mac_families.add(psutil.AF_LINK)
+    if hasattr(socket, "AF_PACKET"):
+        mac_families.add(socket.AF_PACKET)
+
     for interface_name, interface_addresses in addrs.items():
         print(f"Interface: {interface_name}")
         for address in interface_addresses:
-            if address.family == 2:  # IPv4
-                print(f"  IP Address: {address.address}")
-            elif address.family == 17:  # MAC
+            if address.family == socket.AF_INET:
+                print(f"  IPv4 Address: {address.address}")
+            elif address.family == socket.AF_INET6:
+                print(f"  IPv6 Address: {address.address}")
+            elif address.family in mac_families:
                 print(f"  MAC Address: {address.address}")
         print()
 
 def show_arp_table():
     print("\n=== ARP Table (Devices your machine has seen) ===\n")
     try:
-        if platform.system().lower() == "windows":
-            result = subprocess.run(["arp", "-a"], capture_output=True, text=True)
-        else:
-            result = subprocess.run(["arp", "-a"], capture_output=True, text=True)
+        result = subprocess.run(["arp", "-a"], capture_output=True, text=True)
         print(result.stdout)
     except Exception as e:
         print(f"Error fetching ARP table: {e}")
